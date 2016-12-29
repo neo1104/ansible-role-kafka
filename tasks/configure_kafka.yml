@@ -1,0 +1,7 @@
+---
+- name: copy kafka configure file
+  template:
+    src: server.properties.j2
+    dest: "{{ kafka_conf_dir }}/config/server.properties"
+    owner: root
+    mode: 0644

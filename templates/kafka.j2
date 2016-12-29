@@ -1,0 +1,86 @@
+#!/bin/bash
+
+. /lib/lsb/init-functions
+
+STATUS_RUNNING=0
+STATUS_DEAD=1
+STATUS_DEAD_AND_LOCK=2
+STATUS_NOT_RUNNING=3
+ERROR_PROGRAM_NOT_INSTALLED=5
+
+KAFKA_LOG_DIR={{ kafka_log_dir }}
+KAFKA_CONF_DIR={{ kafka_conf_dir }}/config
+KAFKA_HOME={{ kafka_install_dir }}
+KAFKA_USER=kafka
+
+exec=/usr/bin/kafka-server-start
+desc="Kafka server"
+
+KAFKA_CONF_FILE=${KAFKA_CONF_FILE:-${KAFKA_CONF_DIR}/server.properties}
+START_EXEC_PATH=kafka-server-start
+STOP_EXEC_PATH=kafka-server-stop
+
+start() {
+  [ -x $exec ] || exit $ERROR_PROGRAM_NOT_INSTALLED
+  checkstatus > /dev/null 2>&1
+  status=$?
+  if [ "$status" -eq "$STATUS_RUNNING" ]; then
+    log_failure_msg "${desc} is running"
+    exit 0
+  fi
+  log_success_msg "Starting $desc: "
+  /bin/su -s /bin/bash -c "/bin/bash -c 'exec ${START_EXEC_PATH} -daemon ${KAFKA_CONF_FILE}'" $KAFKA_USER
+  RETVAL=$?
+  if [ $RETVAL -eq 0 ]; then
+    log_success_msg "Kafka started"
+  else
+    log_failure_mg "Kafka start failed. Return value: $RETVAL"
+  fi
+}
+
+stop() {
+  /bin/su -s /bin/bash -c "exec ${STOP_EXEC_PATH}"
+  RETVAL=$?
+  if [ $RETVAL -eq 0 ]; then
+     log_success_msg "Stopped ${desc}: "
+  else
+     log_failure_msg "Failed to stop ${desc}. Return value: $RETVAL"
+  fi
+}
+
+restart() {
+  stop
+  sleep 5
+  start
+}
+
+checkstatus(){
+  PIDS=$(ps ax | grep -i 'kafka\.Kafka' | grep java | grep -v grep | awk '{print $1}')
+  if [ -z ${PIDS} ]; then
+      log_success_msg "Kafka is not running"
+      return ${STATUS_NOT_RUNNING}
+  else
+      log_success_msg "Kafka is running"
+      return ${STATUS_RUNNING}
+  fi
+}
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    checkstatus
+    ;;
+  restart)
+    restart
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|status|restart}"
+    exit 1
+esac
+
+exit $RETVAL

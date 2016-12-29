@@ -1,0 +1,87 @@
+---
+- name: download kafka tgz
+  uri:
+    url: "{{ kafka_download_path }}"
+    dest: "{{ download_tmp_path }}/{{ kafka_pkg_name }}"
+    creates: "{{ download_tmp_path }}/{{ kafka_pkg_name }}"
+
+- name: unarchive kafka tgz
+  shell: "tar -zxvf {{ kafka_pkg_name }}"
+  args:
+    creates: "{{ download_tmp_path }}/{{ kafka_version }}"
+    chdir: "{{ download_tmp_path }}"
+
+- name: create kafak running group
+  group:
+    name: "{{ kafka_user }}"
+    state: present
+
+- name: crete kafka running user
+  user:
+    name: "{{ kafka_user }}"
+    group: "{{ kafka_user }}"
+    createhome: no
+    state: present
+    shell: /bin/nologin
+
+- name: make kafka install directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - "{{ kafka_install_dir }}"
+    - "{{ kafka_conf_dir }}"
+
+- name: make kafka install directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_user }}"
+    mode: 0755
+  with_items:
+    - "{{ kafka_log_dir }}"
+    - "{{ kafka_run_dir }}"
+
+- name: copy kafka to install directory
+  shell: "cp -R {{ download_tmp_path }}/{{ kafka_version }}/{{ item }} {{ kafka_install_dir }}/{{ item }} "
+  args:
+    creates: "{{ kafka_install_dir }}/{{item}}"
+  with_items:
+    - bin
+    - config
+    - libs
+    - LICENSE
+    - NOTICE
+    - site-docs
+
+- name: create /ect/kafka/config link to /usr/lib/kafka/config
+  file:
+    src: "{{ kafka_install_dir }}/config"
+    dest: "{{ kafka_conf_dir }}/config"
+    owner: root
+    mode: 0755
+    state: link
+
+- name: create /usr/bin shell script
+  template:
+    src: "{{ item }}.j2"
+    dest: "/usr/bin/{{ item }}"
+    owner: root
+    mode: 0755
+  with_items:
+    - "kafka-server-start"
+    - "kafka-server-stop"
+    - "kafka-topics"
+    - "kafka-console-producer"
+    - "kafka-console-consumer"
+
+- name: make service script /etc/init.d/kafka
+  template:
+    src: kafka.j2
+    dest: /etc/init.d/kafka
+    owner: root
+    mode: 0755
