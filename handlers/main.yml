@@ -1,2 +1,6 @@
 ---
 # handlers file for roles/kafka
+- name: restart kafka service
+  service:
+    name: kafka
+    state: restarted
