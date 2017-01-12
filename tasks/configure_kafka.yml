@@ -5,3 +5,5 @@
     dest: "{{ kafka_conf_dir }}/config/server.properties"
     owner: root
     mode: 0644
+  tags:
+    - configure

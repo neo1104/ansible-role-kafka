@@ -24,7 +24,7 @@
     state: present
     shell: /bin/nologin
 
-- name: make kafka install directory
+- name: make kafka install and configure directory
   file:
     path: "{{ item }}"
     state: directory
@@ -35,7 +35,7 @@
     - "{{ kafka_install_dir }}"
     - "{{ kafka_conf_dir }}"
 
-- name: make kafka install directory
+- name: make kafka log and run directory
   file:
     path: "{{ item }}"
     state: directory
