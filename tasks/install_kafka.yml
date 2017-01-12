@@ -1,4 +1,9 @@
 ---
+- name: install redhat-lsb
+  yum:
+    name: redhat-lsb
+    state: present
+
 - name: download kafka tgz
   uri:
     url: "{{ kafka_download_path }}"
