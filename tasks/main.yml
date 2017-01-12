@@ -4,3 +4,5 @@
   include: install_kafka.yml
 - name: include configure_kafka.yml
   include: configure_kafka.yml
+- name: include service_kafka.yml
+  include: service_kafka.yml
